@@ -1,19 +1,23 @@
-
 from fastapi import FastAPI
 from pydantic import BaseModel
 import random
 import string
 
-rooms = {}  # {room_code: leader_username}
-
 app = FastAPI()
 
-# กล่องเก็บ user (ชั่วคราว)
 users = {}
+rooms = {}
+
+# ---------- Models ----------
 
 class LoginData(BaseModel):
     username: str
     password: str
+
+class RoomData(BaseModel):
+    username: str
+    room_code: str | None = None
+
 
 # สมัครสมาชิก
 @app.post("/register")
@@ -33,49 +37,46 @@ def login(data: LoginData):
     return {"success": False, "message": "Wrong username or password"}
 
 @app.post("/create-room")
-def create_room(username: str):
-    # สุ่มรหัสห้อง 6 ตัว
+def create_room(data: RoomData):
     room_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     rooms[room_code] = {
-        "leader": username,
-        "members": [username]
+        "leader": data.username,
+        "members": [data.username]
     }
 
     return {
+        "success": True,
         "room_code": room_code,
-        "leader": username
+        "leader": data.username
     }
+
 @app.post("/join-room")
-def join_room(room_code: str, username: str):
-    room_code = room_code.upper()
+def join_room(data: RoomData):
+    room_code = data.room_code.upper()
 
     if room_code not in rooms:
         return {"success": False, "message": "Room not found"}
 
-    if username in rooms[room_code]["members"]:
-        return {"success": True, "room_code": room_code}
-
-    rooms[room_code]["members"].append(username)
+    if data.username not in rooms[room_code]["members"]:
+        rooms[room_code]["members"].append(data.username)
 
     return {
         "success": True,
         "room_code": room_code,
         "leader": rooms[room_code]["leader"]
     }
-@app.get("/room-members")
-def room_members(room_code: str, username: str):
-    room_code = room_code.upper()
 
-    if room_code not in rooms:
+@app.post("/room-members")
+def room_members(data: RoomData):
+    room_code = data.room_code.upper()
+    room = rooms.get(room_code)
+
+    if not room:
         return {"success": False, "message": "Room not found"}
 
-    room = rooms[room_code]
-
-    if room["leader"] != username:
+    if room["leader"] != data.username:
         return {"success": False, "message": "Not leader"}
 
-    return {
-        "success": True,
-        "members": room["members"]
-    }
+    return {"success": True, "members": room["members"]}
+

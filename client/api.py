@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = "https://room-server.onrender.com"
 
 def login(username, password):
     r = requests.post(
@@ -16,28 +16,32 @@ def register(username, password):
     )
     return r.json()
 
+
 def create_room(username):
     r = requests.post(
         f"{BASE_URL}/create-room",
-        params={"username": username}
+        json={"username": username}
     )
     return r.json()
 
-def join_room(room_code, username):
+
+def join_room(username, room_code):
     r = requests.post(
         f"{BASE_URL}/join-room",
-        params={
-            "room_code": room_code,
-            "username": username
+        json={
+            "username": username,
+            "room_code": room_code
         }
     )
     return r.json()
-def get_room_members(room_code, username):
-    r = requests.get(
+
+def room_members(username, room_code):
+    r = requests.post(
         f"{BASE_URL}/room-members",
-        params={
-            "room_code": room_code,
-            "username": username
+        json={
+            "username": username,
+            "room_code": room_code
         }
     )
     return r.json()
+
